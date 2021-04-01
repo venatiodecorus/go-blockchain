@@ -1,9 +1,9 @@
 package main
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -11,8 +11,6 @@ import (
 var bc *Blockchain
 
 func main() {
-	// fmt.Println("lol")
-
 	var err error
 	bc, err = NewBlockchain("newChain")
 	if err != nil {
@@ -20,42 +18,26 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", TransactionHandler)
 	r.HandleFunc("/lastBlock", LastBlockHandler)
+
+	r.HandleFunc("/wallets", ListWalletsHandler).Methods("GET")
+	r.HandleFunc("/wallets", CreateWalletHandler).Methods("POST")
+	r.HandleFunc("/wallets/{address}", WalletBalanceHandler).Methods("GET")
+
+	r.HandleFunc("/transaction", TransactionHandler).Methods("POST")
+
 	http.Handle("/", r)
 
-	h := sha256.New()
-	h.Write([]byte("tony"))
-	to := h.Sum(nil)
-
-	h = sha256.New()
-	h.Write([]byte("francis"))
-	from := h.Sum(nil)
-	bc.NewTrx(to, from, 20)
-	bc.NewTrx(to, from, 30)
-	bc.NewTrx(from, to, 10)
-
-	proof := sha256.New()
-	proof.Write([]byte("proof string"))
-
-	bc.NewBlock(proof)
-
 	http.ListenAndServe(":8080", r)
-
-	// mallory := sha256.New()
-	// mallory.Write([]byte("mallory"))
-
-	// frank := sha256.New()
-	// frank.Write([]byte("frank"))
-
-	// bc.NewTrx(mallory, frank, 100)
-	// bc.NewTrx(frank, mallory, 50)
-	// bc.NewBlock(proof)
 }
 
 func TransactionHandler(w http.ResponseWriter, r *http.Request) {
-	// fmt.Println(r.GetBody())
-	w.Write([]byte("hello!"))
+	amount, err := strconv.Atoi(r.FormValue("amount"))
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	} else {
+		bc.NewTrx(r.FormValue("to"), r.FormValue("from"), amount)
+	}
 }
 
 func LastBlockHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,5 +46,29 @@ func LastBlockHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ERROR"))
 	} else {
 		json.NewEncoder(w).Encode(lastBlock)
+	}
+}
+
+func ListWalletsHandler(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(bc.Wallets)
+}
+
+func CreateWalletHandler(w http.ResponseWriter, r *http.Request) {
+	address, err := bc.CreateWallet()
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	} else {
+		json.NewEncoder(w).Encode(address)
+	}
+}
+
+func WalletBalanceHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	address := vars["address"]
+	balance, err := bc.GetWalletBalance(address)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	} else {
+		json.NewEncoder(w).Encode(balance)
 	}
 }
