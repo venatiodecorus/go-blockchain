@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -28,7 +29,8 @@ func main() {
 
 	http.Handle("/", r)
 
-	http.ListenAndServe(":8080", r)
+	cors := handlers.AllowedOrigins([]string{"*"})
+	http.ListenAndServe(":8080", handlers.CORS(cors)(r))
 }
 
 func TransactionHandler(w http.ResponseWriter, r *http.Request) {

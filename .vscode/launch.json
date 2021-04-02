@@ -1,11 +1,28 @@
 {
     "configurations": [
+        {
+            "name": "web-ui",
+            "command": "npm start",
+            "request": "launch",
+            "type": "node-terminal",
+            "cwd": "${workspaceFolder:blockchain-ui}"
+        },
+
     {
-        "name": "Launch Package",
+        "name": "api-server",
         "type": "go",
         "request": "launch",
         "mode": "debug",
         "program": "${workspaceFolder}"
     }
+    ],
+    "compounds": [
+        {
+            "name": "da whole package",
+            "configurations": [
+                "web-ui",
+                "api-server"
+            ]
+        }
     ]
 }
